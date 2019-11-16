@@ -7,6 +7,6 @@ defmodule LeagueOfLegendsServiceWeb.PageController do
 
   def post(conn, _params) do
     request_params = Plug.Conn.read_body(conn) |> elem(1) |> Poison.decode!()
-    LeagueOfLegendsService.Request.Receiver.send_request(request_params)
+    json(conn, LeagueOfLegendsService.Request.Receiver.send_request(request_params))
   end
 end
