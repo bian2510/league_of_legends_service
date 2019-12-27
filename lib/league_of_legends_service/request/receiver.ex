@@ -1,10 +1,10 @@
 defmodule LeagueOfLegendsService.Request.Receiver do
-  def send_request(params) do
-    players = params["data"]["players"]
+  alias LeagueOfLegendsService.Request.Validation
 
-    case LeagueOfLegendsService.Request.Validation.validate_if_players_exists?(players) do
-      true -> params
-      error -> error
+  def send_request(params) do
+    case Validation.validation_for_create_tournament(params) do
+      true -> true
+      {:error, error} -> error
     end
   end
 end
