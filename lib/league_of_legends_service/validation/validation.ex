@@ -1,6 +1,5 @@
-defmodule LeagueOfLegendsService.Request.Validation do
-  @base_url "https://la2.api.riotgames.com/lol/"
-  @api_key "RGAPI-03eb59ef-f5f5-4da6-8c72-b8c2b8d9e89f"
+defmodule LeagueOfLegendsService.Validation.Validation do
+  alias LeagueOfLegendsService.Request.Requester
 
   def validation_for_create_tournament(params) do
     validate_if_players_exists(params)
@@ -12,9 +11,9 @@ defmodule LeagueOfLegendsService.Request.Validation do
     players_with_status =
       Enum.map(players, fn player ->
         name = String.downcase(player)
-        url = @base_url <> "summoner/v4/summoners/by-name/#{name}"
+        endpoint = "summoner/v4/summoners/by-name/"
 
-        case requester(url) do
+        case Requester.requester_for_get_player_status_code(endpoint, name) do
           200 -> %{name: name, code: 200}
           code -> %{name: name, code: code}
         end
@@ -52,18 +51,9 @@ defmodule LeagueOfLegendsService.Request.Validation do
     start_date = params["data"]["start_date"] |> DateTime.from_iso8601() |> elem(1)
     duration = DateTime.diff(end_date, start_date)
 
-    case duration > 0 && duration < 86400 do
+    case duration > 0 && duration <= 86400 do
       true -> true
       false -> {:error, %{error: "The duration is invalid"}}
     end
-  end
-
-  def requester(url) do
-    headers = [
-      "X-Riot-Token": @api_key,
-      Accept: "Application/json; Charset=utf-8"
-    ]
-
-    HTTPoison.get!(url, headers).status_code
   end
 end
