@@ -1,27 +1,32 @@
 defmodule LeagueOfLegendsService.Validation.Validation do
   alias LeagueOfLegendsService.Request.Requester
 
+  #TODO: Validate number of players in a team
+
   def validation_for_create_tournament(params) do
     validate_if_players_exists(params)
   end
 
   def validate_if_players_exists(params) do
-    players = params["data"]["players"]
+    players =
+      get_in(params, ["data", "teams"])
+      |> Enum.map(fn team ->
+        get_in(team, ["players"])
+        |> Enum.map(fn player ->
+          name = String.downcase(player)
 
-    players_with_status =
-      Enum.map(players, fn player ->
-        name = String.downcase(player)
-        endpoint = "summoner/v4/summoners/by-name/"
-
-        case Requester.requester_for_get_player_status_code(endpoint, name) do
-          200 -> %{name: name, code: 200}
-          code -> %{name: name, code: code}
-        end
+          case Requester.request_for_get_player_status_code(name) do
+            500 -> %{error: "Internal error"}
+            code -> %{name: name, code: code}
+          end
+        end)
       end)
 
-    case Enum.all?(players_with_status, fn player -> player.code == 200 end) do
+    case Enum.all?(players, fn players_of_team ->
+           Enum.all?(players_of_team, fn player -> player.code == 200 end) |> IO.inspect()
+         end) do
       true -> validate_if_start_date_is_valid(params)
-      false -> {:error, players_with_status}
+      false -> {:error, players}
     end
   end
 
